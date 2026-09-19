@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel of Names Freakyville</title>
+<style>
+:root{
+  --bg:#0d1116; --topbar:#101722; --panel:#111925; --line:#27303b;
+  --blue:#4a7fc9; --blue2:#5689d8; --orange:#ff9800; --text:#e9edf3; --muted:#9ba5b3;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+button,input,textarea{font:inherit}
+
+/* ---------- APP: fuld bredde, sidebar + main ---------- */
+.app{display:grid;grid-template-columns:300px 1fr;height:100vh;width:100vw}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{background:#0a0e13;overflow-y:auto;overflow-x:hidden;position:relative}
+.sidebar::-webkit-scrollbar{width:0}
+.side-top{height:230px;background:#4a7fc9;position:relative}
+.logo{position:absolute;left:18px;top:16px;width:78px;height:auto;display:block}
+.menu-icon{position:absolute;right:24px;top:30px;width:26px;height:20px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}
+.menu-icon i{display:block;height:3px;border-radius:2px;background:#fff}
+.profile{position:absolute;left:0;right:0;bottom:-52px;text-align:center}
+.profile-name{font-weight:800;color:#fff;font-size:21px;letter-spacing:.6px;margin:0 0 40px;text-transform:uppercase}
+.avatar{width:104px;height:104px;border-radius:50%;background:#5964ef;border:8px solid #eef1f5;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:42px;color:#fff;overflow:hidden;position:relative;z-index:2}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.nav{padding-top:88px;padding-bottom:40px}
+.nav-item{height:46px;padding:0 24px;display:flex;align-items:center;gap:18px;color:#b9bec6;font-size:15px;font-weight:600;cursor:pointer}
+.nav-item:hover{color:#fff}
+.nav-item.active{margin:0 14px;padding-left:12px;border-radius:8px;background:#252a31;color:#fff}
+.nav-item .ico{width:20px;text-align:center;color:#cbd0d8;font-size:16px;flex:0 0 20px}
+.section-title{color:#ff9c00;font-size:13px;font-weight:800;padding:24px 26px 8px;letter-spacing:.4px}
+.chev{margin-left:auto;color:#7d8695;font-size:12px}
+
+/* ---------- MAIN ---------- */
+.main{min-width:0;display:grid;grid-template-rows:64px 1fr 52px;background:#0d1116;height:100vh}
+.topbar{height:64px;background:var(--topbar);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 22px;gap:16px}
+.pill{border:1px solid #2c3745;border-radius:22px;padding:9px 16px;color:#fff;font-size:14px;background:#121a25;box-shadow:inset 0 0 0 1px #0b1118;white-space:nowrap}
+.pill b{color:#ff8f00}.pill span{color:#ffb13c;font-weight:700}
+.search{margin-left:auto;width:240px;height:38px;background:#1b2430;border-radius:22px;color:#7f8997;padding:0 16px;display:flex;align-items:center;font-size:14px}
+.search::after{content:"⌕";margin-left:auto;font-size:26px;color:#f3f3f3}
+.top-icon{font-size:20px;color:#f5f5f5;cursor:pointer}
+.user{font-weight:700;font-size:13px;text-align:right;line-height:17px;margin-left:6px;color:#fff}
+.user small{color:#a7afba;font-weight:600}
+.discord{width:40px;height:40px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex:0 0 40px;cursor:pointer}
+.discord img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+
+/* ---------- WORKSPACE: hjul + panel ---------- */
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:26px;padding:22px 26px 18px 26px;min-height:0;min-block-size:0}
+.wheel-area{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden}
+
+.controls{position:absolute;top:0;right:0;display:flex;gap:8px;z-index:6}
+.ctrl{height:34px;background:#141b25;border:1px solid #252f3b;border-radius:18px;color:#dfe5eb;padding:0 11px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.ctrl .step{color:#8f99a8}
+.ctrl b{color:#fff;min-width:26px;text-align:center}
+.gear{width:36px;padding:0;justify-content:center;font-size:15px}
+
+.wheel-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:600px;height:600px;flex:0 0 auto}
+.wheel-ring{position:absolute;inset:-6px;border-radius:50%;background:#f7f9fb;box-shadow:0 0 0 2px #e2e7ee,0 12px 28px rgba(0,0,0,.35)}
+canvas{position:relative;width:100%;height:100%;border-radius:50%;display:block;z-index:1}
+.pointer{position:absolute;left:50%;transform:translateX(-50%);z-index:5;top:-14px;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:28px solid #ff9100;transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+.pointer.flick{animation:flick .16s ease-out}
+@keyframes flick{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
+.center{position:absolute;width:19%;aspect-ratio:1/1;border-radius:50%;background:#4a7fc9;border:5px solid #f4f8fc;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-weight:900;cursor:pointer;z-index:3;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.center .die{font-size:26px;line-height:26px;display:none}
+.center .spinword{font-size:17px;letter-spacing:.5px;font-weight:900}
+/* hviletilstand: play-trekant + SPIN */
+.center.idle .idle-ico{display:block}
+.center.idle .die{display:none}
+.center.idle .spinword{display:block}
+/* under spin: terning med 5 øjne – skalerer med cirklen, ét til ét som referencebilledet */
+.center.spinning .idle-ico{display:none}
+.center.spinning .die{
+  display:block;width:23%;height:23%;padding:0;
+  border-radius:4px;background:#f4f8fc;box-sizing:content-box;
+  border:0.9vh solid #ffffff;
+  box-shadow:0 0 0 1px #cfe0f2, 0 0.2vh 0.5vh rgba(0,0,0,.25);
+  position:relative;
+}
+.center.spinning .die .pip{
+  display:none;position:absolute;width:20%;height:20%;border-radius:50%;
+  background:#2f6fc4;
+}
+/* de fem øjne: hjørnerne + midten */
+.center.spinning .die .pip.p1{display:block;left:12%;top:12%}
+.center.spinning .die .pip.p3{display:block;right:12%;top:12%}
+.center.spinning .die .pip.p5{display:block;left:50%;top:50%;transform:translate(-50%,-50%)}
+.center.spinning .die .pip.p7{display:block;left:12%;bottom:12%}
+.center.spinning .die .pip.p9{display:block;right:12%;bottom:12%}
+.center.spinning .die .pip.p2,.center.spinning .die .pip.p4,
+.center.spinning .die .pip.p6,.center.spinning .die .pip.p8{display:none}
+.center.spinning .spinword{display:none}
+.center .idle-ico{display:none;width:0;height:0;border-top:11px solid transparent;border-bottom:11px solid transparent;border-left:18px solid #fff;margin-bottom:4px}
+
+/* ---------- VINDER-OVERLAY: kun over hjulet, ikke over hele siden ---------- */
+.winner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:9;pointer-events:none}
+.winner.show{display:flex}
+/* blød mørk tone lige bag hjulet, så navnet kan læses – resten af siden er urørt */
+.winner .scrim{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 50%, rgba(8,12,18,.66) 0%, rgba(8,12,18,.5) 55%, rgba(8,12,18,0) 78%)}
+.winner .plate{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:0 24px;pointer-events:none}
+.winner .kick{color:#ffb13c;font-weight:800;font-size:15px;letter-spacing:2px;margin-bottom:10px;text-shadow:0 2px 8px rgba(0,0,0,.85)}
+.winner .name{font-size:clamp(38px,6.4vh,68px);font-weight:800;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.9);margin-bottom:24px;text-align:center;line-height:1.05}
+.winner .btns{display:flex;gap:10px;pointer-events:auto}
+.winner .btns button{height:38px;border-radius:9px;border:0;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;color:#fff}
+.win-luk{background:#2a3340;border:1px solid #3a4656}
+.win-one{background:#5689d8}
+.win-all{background:#ff9800;color:#111}
+
+/* ---------- PANEL ---------- */
+.panel{background:var(--panel);border:1px solid #2c3745;border-radius:15px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.tabs{display:grid;grid-template-columns:1fr 1fr;padding:12px 11px 8px;gap:9px}
+.tab{height:34px;border:0;border-radius:12px;background:#182230;color:#dbe0e7;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.tab.active{background:#ff9800;color:#111}
+.tab .badge{display:inline-block;background:#242d38;padding:1px 8px;border-radius:10px;font-weight:800}
+.tab.active .badge{background:#1a1a1a;color:#fff}
+.info{margin:2px 12px 6px;padding:12px 14px;border:1px solid #2f3d4e;border-radius:10px;background:#152030;color:#9fb4cc;font-size:12px;line-height:1.5}
+.info b{color:#e8eef6;font-size:12px;display:block;margin-bottom:2px;font-weight:800}
+.actions{padding:13px 15px;border-top:1px solid #202a36}
+.actions.plain{border-top:0}
+.label{font-size:12px;font-weight:900;color:#f0f2f5;margin-bottom:9px;letter-spacing:.3px}
+.action-row{display:flex;gap:8px}
+.action{flex:1;height:32px;border:0;border-radius:10px;background:#303947;color:#7e8998;font-size:12px;font-weight:800;cursor:pointer}
+.action.enabled{color:#e5e8ed}
+.warn{margin:0 15px 10px;padding:10px 12px;border-radius:8px;background:#3a3320;border:1px solid #5a4a1e;color:#ffcf6b;font-size:12px;line-height:1.45;display:flex;gap:9px;align-items:flex-start}
+.warn .tri{color:#ffb13c;font-size:15px;line-height:1}
+.head-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.head-row .label{margin:0}
+.advanced{border:1px solid #303c4c;border-radius:16px;padding:6px 11px;background:#131c28;color:#dce2ea;font-size:11px;font-weight:800;cursor:pointer}
+textarea{width:100%;height:100%;min-height:150px;resize:none;background:#111a26;border:2px solid #4e88d6;border-radius:8px;color:#d8dde4;padding:12px;font-size:13px;line-height:1.5;outline:none}
+textarea::placeholder{color:#8b94a2}
+.names-block{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 15px 13px}
+.result{margin:0 15px 15px;padding:13px;border:1px solid #3a4451;border-radius:10px;background:#2a323e}
+.result-title{font-size:11px;font-weight:900;margin-bottom:9px;letter-spacing:.3px}
+.result-row{display:flex;gap:8px}
+.result input{height:36px;flex:1;background:#151e2a;border:1px solid #485260;border-radius:6px;padding:0 11px;color:#fff;outline:none}
+.result button{width:70px;border:0;border-radius:10px;background:#5689d8;color:#fff;font-weight:800;cursor:pointer}
+.footer{background:#121a27;border-top:1px solid #2a3441;display:flex;align-items:center;padding:0 22px;color:#d9dde4;font-size:13px}
+.footer a{color:#d9dde4;margin:0 5px;text-decoration:underline}
+.online{margin-left:auto;display:flex;align-items:center;gap:8px}
+.dot{display:inline-block;width:10px;height:10px;background:#55c95c;border-radius:50%}
+
+/* ---------- KONFETTI + TOAST + MODAL ---------- */
+#confetti{position:absolute;inset:0;pointer-events:none;z-index:7}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#202a37;border:1px solid #3a4656;padding:12px 18px;border-radius:9px;opacity:0;pointer-events:none;transition:.2s;z-index:40;font-size:14px;white-space:nowrap}
+.toast.show{opacity:1}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
+.modal.open{display:flex}
+.modal-box{width:420px;background:#111925;border:1px solid #394655;border-radius:12px;padding:20px}
+.modal-box h3{margin:0 0 8px;font-size:18px}
+.modal-box p{margin:0 0 14px;color:#9ba5b3;font-size:13px}
+.modal-box label{font-size:12px;font-weight:800;color:#dfe4ea}
+.modal-box input{width:100%;height:40px;background:#18212d;border:1px solid #445267;color:#fff;border-radius:7px;padding:0 10px;margin-top:6px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.modal-actions button{padding:9px 16px;border:0;border-radius:7px;background:#5689d8;color:#fff;font-weight:700;cursor:pointer}
+
+@media(max-width:1100px){
+  .app{grid-template-columns:240px 1fr}
+  .workspace{grid-template-columns:minmax(0,1fr) 330px;gap:18px;padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-top">
+      <img class="logo" src="cb6e15e7-2414-4131-b37a-b806e7579e29-image-removebg-preview.png" alt="Freaky Ville">
+      <div class="menu-icon" title="Menu"><i></i><i></i><i></i></div>
+      <div class="profile">
+        <div class="profile-name">Aleks</div>
+        <div class="avatar"><img src="avatar.png" alt="Aleks" onerror="this.replaceWith(document.createTextNode('☯'))"></div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item"><span class="ico">⌂</span>Forside</div>
+      <div class="nav-item"><span class="ico">🛒</span>Butik</div>
+      <div class="nav-item"><span class="ico">☷</span>Bans</div>
+      <div class="nav-item"><span class="ico">?</span>Support Tickets</div>
+      <div class="nav-item"><span class="ico">▣</span>Regler</div>
+      <div class="nav-item"><span class="ico">♧</span>Forslag</div>
+      <div class="nav-item"><span class="ico">♟</span>Staff / Vagter <span class="chev">⌄</span></div>
+      <div class="nav-item"><span class="ico">◷</span>Online Tid <span class="chev">⌄</span></div>
+      <div class="nav-item active"><span class="ico">◔</span>Wheel of Names</div>
+      <div class="nav-item"><span class="ico">▤</span>Item Priser <span class="chev">⌄</span></div>
+      <div class="section-title">SPILLER</div>
+      <div class="nav-item"><span class="ico">◉</span>Anmeldelser <span class="chev">⌄</span></div>
+      <div class="nav-item"><span class="ico">⊘</span>Straf Appeals <span class="chev">⌄</span></div>
+      <div class="section-title">ANSØGNINGER</div>
+      <div class="nav-item"><span class="ico">▷</span>YouTube Ansøgninger <span class="chev">⌄</span></div>
+      <div class="nav-item"><span class="ico">🛡</span>Hjælper Ansøgninger <span class="chev">⌄</span></div>
+      <div class="nav-item"><span class="ico">🔧</span>Bygger Ansøgninger <span class="chev">⌄</span></div>
+      <div class="nav-item"><span class="ico">🧍</span>Vagt Køb Ansøgninger <span class="chev">⌄</span></div>
+      <div class="nav-item"><span class="ico">🧍</span>Vagt Ansøgninger <span class="chev">⌄</span></div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="pill">Spil med <b id="playersOnline">195</b> andre på IP <span>mc.freakyville.dk</span></div>
+      <div class="search">Søg...</div>
+      <div class="top-icon">Tᵀ</div>
+      <div class="top-icon">☾</div>
+      <div class="user">Aleks<br><small>Medlem</small></div>
+      <div class="discord"><img src="avatar.png" alt="Aleks" onerror="this.replaceWith(document.createTextNode('☯'))"></div>
+    </header>
+
+    <section class="workspace">
+      <div class="wheel-area">
+        <div class="controls">
+          <button class="ctrl" id="durationBtn"><span class="step">−</span>&nbsp;◷&nbsp;<b>10s</b>&nbsp;<span class="step">+</span></button>
+          <button class="ctrl" id="countBtn"><span class="step">−</span>&nbsp;♛&nbsp;<b>1</b>&nbsp;<span class="step">+</span></button>
+          <button class="ctrl gear" id="gearBtn">⚙</button>
+        </div>
+
+        <div class="wheel-wrap" id="wheelWrap">
+          <div class="wheel-ring"></div>
+          <div class="pointer"></div>
+          <canvas id="wheel" width="900" height="900"></canvas>
+          <div class="center idle" id="spinBtn" title="Klik for at rulle hjulet"><span class="idle-ico"></span><div class="die"><i class="pip p1"></i><i class="pip p2"></i><i class="pip p3"></i><i class="pip p4"></i><i class="pip p5"></i><i class="pip p6"></i><i class="pip p7"></i><i class="pip p8"></i><i class="pip p9"></i></div><div class="spinword">SPIN</div></div>
+
+          <div class="winner" id="winner">
+            <div class="scrim"></div>
+            <div class="plate">
+              <div class="kick">OG VINDEREN ER</div>
+              <div class="name" id="winnerName">—</div>
+              <div class="btns">
+                <button class="win-luk" id="winLuk">Luk</button>
+                <button class="win-one" id="winOne">Fjern mulighed</button>
+                <button class="win-all" id="winAll">Fjern alle muligheder</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <canvas id="confetti"></canvas>
+      </div>
+
+      <aside class="panel">
+        <div class="tabs">
+          <button class="tab active">🎲 Muligheder <span class="badge" id="countBadge">0</span></button>
+          <button class="tab">♟ Din Lobby <span class="badge">1</span></button>
+          <button class="tab">🏆 Resultater <span class="badge">254</span></button>
+          <button class="tab">▥ Statistik</button>
+        </div>
+
+        <div class="info">
+          <b>ℹ Dit seneste hjul-ID er: <span id="wheelId">a70cf01e-4faf-49af-b653-d9306576bb58</span></b>
+          Andre der deltager kan indsætte dette under "Muligheder" for at tjekke resultatet.
+        </div>
+
+        <div class="actions plain">
+          <div class="label">HANDLINGER</div>
+          <div class="action-row">
+            <button class="action" id="randomBtn">⤨ Bland</button>
+            <button class="action" id="sortBtn">☷ Sortér</button>
+            <button class="action" id="clearBtn">✕ Ryd</button>
+          </div>
+        </div>
+
+        <div class="head-row" style="padding:0 15px">
+          <div class="label">NAVNE PÅ HJULET</div>
+          <button class="advanced" id="advancedBtn">☷ Advanced</button>
+        </div>
+
+        <div class="warn" id="dupWarn" style="display:none">
+          <span class="tri">⚠</span><span id="dupText"></span>
+        </div>
+
+        <div class="names-block">
+          <textarea id="names" placeholder="Indsæt navne – ét pr. linje
+
+fx:
+Andreas
+Freak
+OGreen"></textarea>
+        </div>
+
+        <div class="result">
+          <div class="result-title">TJEK ET RESULTAT</div>
+          <div class="result-row"><input id="resultId" placeholder="Indsæt et hjul-ID"><button id="checkBtn">Tjek</button></div>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      FreakyVille © 2026 CVR: 35958045 • <a href="#">Privatlivspolitik</a> • <a href="#">Cookiepolitik</a> • v3.218.0
+      <div class="online">73 online på freakyville.dk <span class="dot"></span></div>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>Indstillinger</h3>
+    <p>Her kan du ændre hjulopsætningen.</p>
+    <label>Antal navne pr. spin</label>
+    <input id="modalCount" type="number" min="1" max="20" value="1">
+    <div class="modal-actions"><button id="closeModal">Luk</button><button id="saveModal">Gem</button></div>
+  </div>
+</div>
+
+<script>
+const canvas=document.getElementById('wheel'), ctx=canvas.getContext('2d');
+const namesEl=document.getElementById('names'), countBadge=document.getElementById('countBadge');
+const toast=document.getElementById('toast');
+let names=[], rotation=0, spinning=false, duration=10, winners=1, lastWinner=null, lastPointerIdx=-1;
+
+function getNames(){ return namesEl.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
+function save(){localStorage.setItem('fvWheelNames',namesEl.value);}
+function load(){
+  const v=localStorage.getItem('fvWheelNames');
+  namesEl.value = (v!==null && v.trim()) ? v :
+    'Bagomgoat\nJuicykongen\nabuseabuse\nkoldedrengen\nctitancellen\nkoldeniels\ntykkehans\nbranconiggi\naliskebabshop\nprimefynne';
+  names=getNames(); draw();
+}
+function showToast(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200)}
+
+const PALETTE=['#ef4b3f','#f0742c','#f5a623','#f2c94c','#8bc34a','#2ecc71','#00c8b4','#22b8e0','#2f8fe0','#6b5fd8','#a55fd8','#e04fa6'];
+
+/* hvert unikt navn får sin egen faste farve – gentages navnet, gentages farven */
+function nameColor(name){
+  const list=[...new Set(names)];
+  const pos=list.indexOf(name);
+  return PALETTE[((pos<0?0:pos)%PALETTE.length+PALETTE.length)%PALETTE.length];
+}
+
+function draw(){
+  names=getNames(); countBadge.textContent=names.length;
+  const n=Math.max(names.length,1), cx=450, cy=450, r=440;
+  ctx.clearRect(0,0,900,900);
+  for(let i=0;i<n;i++){
+    const a0=rotation+i*2*Math.PI/n, a1=rotation+(i+1)*2*Math.PI/n;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
+    ctx.fillStyle = n===1 ? '#00c8b4' : nameColor(names[i]);
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.stroke();
+    if(names[i]){
+      ctx.save();ctx.translate(cx,cy);ctx.rotate((a0+a1)/2);
+      ctx.textAlign='right';ctx.fillStyle='#fff';
+      const fs=Math.max(15,Math.min(30,330/n));
+      ctx.font='bold '+fs+'px Arial';
+      ctx.shadowColor='rgba(0,0,0,.28)';ctx.shadowBlur=4;
+      ctx.fillText(names[i].slice(0,25),r-30,fs*0.35);ctx.restore();
+    }
+  }
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=7;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,r-3.5,0,Math.PI*2);ctx.strokeStyle='#e6ebf1';ctx.lineWidth=2;ctx.stroke();
+}
+
+function checkDuplicates(){
+  const list=getNames(), seen={}, dups=new Set();
+  list.forEach(n=>{ seen[n]=(seen[n]||0)+1; if(seen[n]>1) dups.add(n); });
+  const warn=document.getElementById('dupWarn');
+  if(dups.size){
+    document.getElementById('dupText').textContent = dups.size+' navne optræder flere gange: '+[...dups].join(', ');
+    warn.style.display='flex';
+  } else warn.style.display='none';
+}
+
+function pointerTick(){
+  const list=getNames();
+  if(!list.length) return;
+  const n=list.length, seg=2*Math.PI/n;
+  /* hvilket felt pegeren står over lige nu */
+  const angle=(((-Math.PI/2-rotation)%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  const idx=Math.floor(angle/seg)%n;
+  if(idx!==lastPointerIdx){
+    lastPointerIdx=idx;
+    const p=document.querySelector('.pointer');
+    if(p){ p.classList.remove('flick'); void p.offsetWidth; p.classList.add('flick'); }
+  }
+}
+
+function spin(){
+  if(spinning)return;
+  names=getNames(); if(!names.length){showToast('Indsæt mindst ét navn først.');return;}
+  document.getElementById('winner').classList.remove('show');
+  const btn=document.getElementById('spinBtn');
+  btn.classList.remove('idle'); btn.classList.add('spinning');
+  spinning=true;
+
+  const P={airDrag:0.996, bearingFriction:0.00007, pegDrag:0.998, minVelocity:0.0005,
+           turnsMin:14, turnsRandom:3};
+
+  const n=names.length, seg=2*Math.PI/n, TAU=2*Math.PI;
+  const norm=a=>((a%TAU)+TAU)%TAU;
+
+  /* vælg vinderen FØRST – lander altid på et af navnene (1 navn = det navn) */
+  const winIdx = n===1 ? 0 : Math.floor(Math.random()*n);
+
+  const segMid=winIdx*seg + seg/2;
+  const jitter = n===1 ? 0 : (Math.random()-0.5)*seg*0.7;
+  const finalRotation = norm((-Math.PI/2) - segMid - jitter);
+  const turns = P.turnsMin + Math.floor(Math.random()*P.turnsRandom);
+  const required = (turns+1)*TAU + norm(finalRotation - rotation);
+
+  /* sammentalt afstand for en given starthastighed – samme regler som selve animationen */
+  function distanceFor(v0){
+    const dt=16.6667/1000;                 /* fast frame-trin, uafhængigt af skærmens Hz */
+    let vel=v0, dist=0, lastSeg=-1, guard=0;
+    while(vel>P.minVelocity && guard++<P.simulationMaxFrames){
+      vel*=Math.pow(P.airDrag, dt*60);
+      vel=Math.max(0, vel - P.bearingFriction*dt*60);
+      const cur=Math.floor(norm(-(rotation+dist)+(-Math.PI/2))/seg)%n;
+      if(cur!==lastSeg && lastSeg!==-1) vel*=Math.pow(P.pegDrag, dt*60);
+      lastSeg=cur;
+      dist+=vel;                             /* i radianer pr. frame */
+    }
+    return dist;
+  }
+
+  /* binær søgning: find den starthastighed der giver præcis den ønskede afstand */
+  let lo=0.02, hi=1.2, v0=0.5;
+  for(let i=0;i<60;i++){
+    v0=(lo+hi)/2;
+    const d=distanceFor(v0);
+    if(d<required) lo=v0; else hi=v0;
+  }
+  v0=(lo+hi)/2;
+
+  /* kør animationen med den fundne starthastighed */
+  const dt=16.6667/1000;
+  let vel=v0, dist=0, lastSeg=-1, last=performance.now();
+  function frame(now){
+    const steps=Math.min(6, Math.max(1, Math.round((now-last)/16.6667))); last=now;
+    for(let s=0;s<steps;s++){
+      vel*=Math.pow(P.airDrag, dt*60);
+      vel=Math.max(0, vel - P.bearingFriction*dt*60);
+      const cur=Math.floor(norm(-(rotation+dist)+(-Math.PI/2))/seg)%n;
+      if(cur!==lastSeg && lastSeg!==-1) vel*=Math.pow(P.pegDrag, dt*60);
+      lastSeg=cur;
+      dist+=vel;
+    }
+    rotation=norm(rotation+dist); dist=0;
+    draw(); pointerTick();
+
+    if(vel<=P.minVelocity){
+      rotation=finalRotation; draw(); pointerTick();
+      spinning=false;
+      btn.classList.remove('spinning'); btn.classList.add('idle');
+      showWinner(names[winIdx]);
+      return;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function showWinner(name){
+  lastWinner=name;
+  document.getElementById('winnerName').textContent=name;
+  document.getElementById('winner').classList.add('show');
+  fireworks();
+}
+
+/* ---------- FYRVÆRKERI: raketter der stiger op fra bunden og sprænger ---------- */
+const cf=document.getElementById('confetti'), cctx=cf.getContext('2d');
+let parts=[], rockets=[], cfRun=false, nextRocket=0;
+function sizeConfetti(){
+  const box=document.querySelector('.wheel-area');
+  cf.width=box.clientWidth;
+  cf.height=box.clientHeight;
+}
+window.addEventListener('resize',sizeConfetti);
+
+/* dæmpede fyrværkeri-farver: rød, orange, gul, grøn, hvid */
+const FW_COLORS=['#ff5a3c','#ff8a2b','#ffc93c','#7ddb4f','#39d98a','#ffffff','#ffe9a8'];
+
+function launchRocket(){
+  const startX=cf.width*(0.12+Math.random()*0.76);
+  const targetY=cf.height*(0.10+Math.random()*0.34);
+  rockets.push({
+    x:startX, y:cf.height+10,
+    vx:(Math.random()-.5)*0.9,
+    vy:-(7.4+Math.random()*2.6),
+    targetY,
+    trail:[]
+  });
+}
+
+/* selve eksplosionen: mange lange stråler i en stjerne */
+function explode(x,y){
+  const base=FwColorPick();
+  const second=FwColorPick();
+  const count=70+Math.floor(Math.random()*40);
+  const maxR=90+Math.random()*70;
+  for(let i=0;i<count;i++){
+    const a=(i/count)*Math.PI*2 + (Math.random()-.5)*0.12;
+    const sp=2.4+Math.random()*5.4;
+    const len=maxR*(0.55+Math.random()*0.7)/10;
+    parts.push({
+      x,y,
+      px:x, py:y,                       /* forrige position → giver stråle-linjer */
+      vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+      w:1.4+Math.random()*1.6,          /* tynd streg */
+      len:6+len*1.6,
+      c:(Math.random()<.5?base:second),
+      a, va:0,
+      life:70+Math.random()*55
+    });
+  }
+  /* en lille hvid kerne lige i midten */
+  for(let i=0;i<14;i++){
+    const a=Math.random()*Math.PI*2, sp=0.6+Math.random()*1.6;
+    parts.push({x,y,px:x,py:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,w:2,len:5,c:'#ffffff',a,va:0,life:40+Math.random()*30});
+  }
+}
+function FwColorPick(){
+  /* vægt farverne så rød/orange/gul dominerer som på billedet */
+  const r=Math.random();
+  if(r<0.34) return '#ff5a3c';
+  if(r<0.6)  return '#ff8a2b';
+  if(r<0.8)  return '#ffc93c';
+  if(r<0.9)  return '#7ddb4f';
+  return '#ffffff';
+}
+
+function fireworks(){
+  sizeConfetti();
+  parts=[]; rockets=[]; cfRun=true; nextRocket=0;
+  (function tick(now){
+    if(!cfRun){cctx.clearRect(0,0,cf.width,cf.height);return;}
+    cctx.clearRect(0,0,cf.width,cf.height);
+
+    /* affyr en ny raket jævnligt, så der bliver ved */
+    if(now-nextRocket>520){ nextRocket=now; launchRocket(); }
+
+    /* raketter: stiger op, efterlader spor, sprænger ved target */
+    for(let i=rockets.length-1;i>=0;i--){
+      const r=rockets[i];
+      // spor
+      r.trail.push({x:r.x,y:r.y});
+      if(r.trail.length>7) r.trail.shift();
+      r.x+=r.vx; r.y+=r.vy; r.vy+=0.045;
+      // tegn spor som en lysende streg
+      cctx.lineCap='round';
+      for(let t=1;t<r.trail.length;t++){
+        const p0=r.trail[t-1], p1=r.trail[t];
+        cctx.beginPath();cctx.moveTo(p0.x,p0.y);cctx.lineTo(p1.x,p1.y);
+        cctx.strokeStyle='rgba(255,200,120,'+(t/r.trail.length*0.55)+')';
+        cctx.lineWidth=2.2;cctx.stroke();
+      }
+      cctx.beginPath();cctx.arc(r.x,r.y,2.6,0,Math.PI*2);cctx.fillStyle='#fff6d8';cctx.fill();
+      if(r.y<=r.targetY || r.vy>=0){ explode(r.x,r.y); rockets.splice(i,1); }
+    }
+
+    /* eksplosioner: stråler der flyver ud og dør langsomt */
+    for(let i=parts.length-1;i>=0;i--){
+      const p=parts[i];
+      p.px=p.x; p.py=p.y;
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.055; p.vx*=0.988; p.vy*=0.988; p.life--;
+      if(p.life<=0){parts.splice(i,1);continue;}
+      /* falmende stråle – tynd streg, ikke klods */
+      cctx.strokeStyle=p.c;
+      cctx.globalAlpha=Math.max(0,Math.min(1,p.life/(p.len*3)));
+      cctx.lineWidth=p.w; cctx.lineCap='round';
+      cctx.beginPath();cctx.moveTo(p.px,p.py);cctx.lineTo(p.x,p.y);cctx.stroke();
+    }
+    cctx.globalAlpha=1;
+    requestAnimationFrame(tick);
+  })(performance.now());
+}
+function stopFireworks(){
+  cfRun=false; parts=[]; rockets=[];
+  cctx.globalAlpha=1;
+  cctx.clearRect(0,0,cf.width,cf.height);
+}
+
+/* ---------- EVENTS ---------- */
+namesEl.addEventListener('input',()=>{save();draw();checkDuplicates()});
+document.getElementById('spinBtn').onclick=spin;
+document.getElementById('clearBtn').onclick=()=>{namesEl.value='';save();draw();checkDuplicates();showToast('Hjulet er ryddet.')};
+document.getElementById('sortBtn').onclick=()=>{namesEl.value=getNames().sort((a,b)=>a.localeCompare(b,'da')).join('\n');save();draw();checkDuplicates()};
+document.getElementById('randomBtn').onclick=()=>{let a=getNames();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}namesEl.value=a.join('\n');save();draw();checkDuplicates()};
+document.getElementById('durationBtn').onclick=()=>{duration=duration===10?5:duration===5?15:10;document.getElementById('durationBtn').innerHTML='<span class="step">−</span>&nbsp;◷&nbsp;<b>'+duration+'s</b>&nbsp;<span class="step">+</span>';showToast('Spin-tid: '+duration+' sek.')};
+document.getElementById('countBtn').onclick=()=>{winners=winners>=5?1:winners+1;document.getElementById('countBtn').innerHTML='<span class="step">−</span>&nbsp;♛&nbsp;<b>'+winners+'</b>&nbsp;<span class="step">+</span>'};
+document.getElementById('advancedBtn').onclick=()=>showToast('Advanced-indstillinger åbnet (demo).');
+document.getElementById('checkBtn').onclick=()=>{const id=document.getElementById('resultId').value.trim();showToast(id?'Resultat-ID '+id+' er kun til lokal demo.':'Indsæt et hjul-ID.')};
+document.getElementById('gearBtn').onclick=()=>document.getElementById('modal').classList.add('open');
+document.getElementById('closeModal').onclick=()=>document.getElementById('modal').classList.remove('open');
+document.getElementById('saveModal').onclick=()=>{winners=Math.max(1,Math.min(20,+document.getElementById('modalCount').value||1));document.getElementById('countBtn').innerHTML='<span class="step">−</span>&nbsp;♛&nbsp;<b>'+winners+'</b>&nbsp;<span class="step">+</span>';document.getElementById('modal').classList.remove('open');showToast('Indstillinger gemt.')};
+document.getElementById('winLuk').onclick=()=>{stopFireworks();document.getElementById('winner').classList.remove('show')};
+document.getElementById('winOne').onclick=()=>{
+  const list=getNames(); const i=list.indexOf(lastWinner);
+  if(i>-1) list.splice(i,1);
+  namesEl.value=list.join('\n'); save(); draw(); checkDuplicates();
+  stopFireworks();
+  document.getElementById('winner').classList.remove('show');
+};
+document.getElementById('winAll').onclick=()=>{
+  namesEl.value=''; save(); draw(); checkDuplicates();
+  stopFireworks();
+  document.getElementById('winner').classList.remove('show');
+};
+sizeConfetti();
+load(); checkDuplicates();
+
+/* ---------- Hjulet holdes altid kvadratisk ---------- */
+const wheelWrap=document.getElementById('wheelWrap');
+function fitWheel(){
+  const area=document.querySelector('.wheel-area');
+  /* brug den mindste af de to faktiske mål, minus luft til kontrol-pillerne */
+  const availW=area.clientWidth-10;
+  const availH=area.clientHeight-56;
+  const size=Math.max(240, Math.min(availW, availH, 760));
+  wheelWrap.style.width=size+'px';
+  wheelWrap.style.height=size+'px';
+  wheelWrap.style.flex='0 0 '+size+'px';
+  /* canvas får præcis samme pixelstørrelse som wrapperen – kan ikke straekkes */
+  canvas.style.width=size+'px';
+  canvas.style.height=size+'px';
+  canvas.style.maxWidth=size+'px';
+  canvas.style.maxHeight=size+'px';
+}
+window.addEventListener('resize',fitWheel);
+if(window.ResizeObserver){ new ResizeObserver(fitWheel).observe(document.querySelector('.wheel-area')); }
+fitWheel();
+</script>
+</body>
+</html>
